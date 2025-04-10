@@ -10,6 +10,7 @@ int runcmd(const char *sh, const char *CATALINA_HOME)
 {
     size_t size = strlen(CATALINA_HOME) + strlen(sh);
     char *cmd = malloc(sizeof(char) * size);
+    strcpy(cmd, "");
     strcat(cmd, CATALINA_HOME);
     strcat(cmd, sh);
     int result = system(cmd);

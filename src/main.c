@@ -4,14 +4,15 @@
 
 #include "fs.h"
 #include "tcat.h"
+#include "nc.h"
 
 static char *CATALINA_HOME;
 static char *WARFILE;
 
-int readenv();
+void readenv();
 int runargs(char **argv);
 
-const char *commands[4] = {"set", "run", "stop", "remove"};
+const char *commands[5] = {"set", "run", "stop", "remove", "listen"};
 
 int main(int argc, char **argv)
 {
@@ -20,17 +21,15 @@ int main(int argc, char **argv)
         printf("WAR=\"file_name\" jcatl [%s|%s|%s]\n\n", commands[0], commands[1], commands[2]);
         return -1;
     }
-
-    int renv = readenv();
-    if (renv != 0)
-        return renv;
+    readenv();
 
     int result = runargs(argv);
-
+    if (result != 0)
+        perror("tcatl");
     return result;
 }
 
-int readenv()
+void readenv()
 {
     CATALINA_HOME = getenv("CATALINA_HOME");
     WARFILE = getenv("WAR");
@@ -38,15 +37,13 @@ int readenv()
     if (!CATALINA_HOME)
     {
         printf("CATALINA_HOME no está en el path\n\n");
-        return -1;
+        exit(-1);
     }
     if (!WARFILE)
     {
         printf("WARFILE no definido: escriba 'WAR=\"file_name\" jcatl [option]\n\n");
-        return -1;
+        exit(-1);
     }
-
-    return 0;
 }
 
 int runargs(char **argv)
@@ -87,9 +84,16 @@ int runargs(char **argv)
         }
         printf("Arhivo %s.war y carpeta eliminados\n\n", WARFILE);
     }
+    else if (strcmp(argv[1], commands[4]) == 0)
+    {
+        nc_listen(WARFILE, CATALINA_HOME);
+        result = 0;
+    }
     else
     {
         printf("No se reconoce el comando\n\n");
         result = 1;
     }
+
+    return result;
 }
