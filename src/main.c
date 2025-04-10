@@ -11,7 +11,7 @@ static char *WARFILE;
 int readenv();
 int runargs(char **argv);
 
-const char *commands[3] = {"set", "run", "stop"};
+const char *commands[4] = {"set", "run", "stop", "remove"};
 
 int main(int argc, char **argv)
 {
@@ -52,6 +52,7 @@ int readenv()
 int runargs(char **argv)
 {
     int result;
+
     if (strcmp(argv[1], commands[0]) == 0)
     {
         result = cpywar(WARFILE, CATALINA_HOME);
@@ -75,6 +76,16 @@ int runargs(char **argv)
         result = runsh(startup, WARFILE, CATALINA_HOME);
         if (result != 0)
             return result;
+    }
+    else if (strcmp(argv[1], commands[3]) == 0)
+    {
+        result = rmwar(WARFILE, CATALINA_HOME);
+        if (result != 0)
+        {
+            perror("No se pudo eliminar el proyecto (folder + .war)");
+            return result;
+        }
+        printf("Arhivo %s.war y carpeta eliminados\n\n", WARFILE);
     }
     else
     {

@@ -4,6 +4,10 @@
 #include <string.h>
 #include <stdlib.h>
 
+const char *webfolder = "/webapps/";
+const char *targetfolder = "target/";
+const char *fext = ".war";
+
 int cpyFile(const char *src, const char *dest)
 {
     FILE *filer = fopen(src, "rb");
@@ -41,9 +45,7 @@ int cpywar(const char *WARFILE, const char *CATALINA_HOME)
     //     perror("getcwd");
     //     return 1;
     // }
-    const char *targetfolder = "target/";
-    const char *webfolder = "/webapps/";
-    const char *fext = ".war";
+
     size_t srcsize = strlen(targetfolder) + strlen(WARFILE) + strlen(fext);
     size_t destsize = strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE) + strlen(fext);
     char *src = malloc(sizeof(char) * srcsize);
@@ -65,4 +67,29 @@ int cpywar(const char *WARFILE, const char *CATALINA_HOME)
     free(dest);
 
     return result;
+}
+
+int rmwar(const char *WARFILE, const char *CATALINA_HOME)
+{
+    size_t size = strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE) + strlen(fext);
+    char *file = malloc(sizeof(char) * size);
+    strcat(file, CATALINA_HOME);
+    strcat(file, webfolder);
+    strcat(file, WARFILE);
+    strcat(file, fext);
+    int r = remove(file) + rmfolder(WARFILE, CATALINA_HOME);
+    free(file);
+    return r;
+}
+
+int rmfolder(const char *WARFILE, const char *CATALINA_HOME)
+{
+    const char *cmd_temp = "rm -rf ";
+    size_t size = strlen(cmd_temp) + strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE);
+    char *cmd = (char *)malloc(size);
+    strcat(cmd, cmd_temp);
+    strcat(cmd, CATALINA_HOME);
+    strcat(cmd, webfolder);
+    strcat(cmd, WARFILE);
+    return system(cmd);
 }
