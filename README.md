@@ -55,7 +55,7 @@ WAR="war_file_without_extension" jcatl remove
 
 This program is just a simple implementation made to simplify and speed up my work. Some IDEs have plugins for this but I couldn't find any that fit my requirements: `just something simple, small & quick`.
 
-Even Though it's still improvable, I may not change or update this repo in a while (Only if I need it).
+Even though it's still improvable, I may not change or update this repo in a while (unless I need it).
 
 `(Los mensajes de la consola están en spanglish)`
 
