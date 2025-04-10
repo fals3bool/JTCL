@@ -7,6 +7,22 @@ JTCL (Java Tomcat Launcher) is command line application written in C that helps 
 Download `jcatl` from the lastest release.
 
 ###  Build it yourself
+
+`linux`
+```shell
+# need some libs
+sudo apt update
+sudo apt install libncurses5-dev libncursesw5-dev
+# or
+sudo pacman -S ncurses
+```
+
+`windows`<br>
+```
+I dunno... It won't work anyways
+```
+
+`build it!! :)`
 ```shell
 git clone this-repo
 cd build/
@@ -49,6 +65,15 @@ WAR="war_file_without_extension" jcatl stop
 
 # remove war file & folder from $CATALINA_HOME/webapps
 WAR="war_file_without_extension" jcatl remove
+
+# open text user interface (TUI)
+WAR="war_file_without_extension" jcatl listen
+# you'll see 4 clickable buttons
+[ SET ]  [ RUN ]  [ STOP ]  [ REMOVE ]
+# exit TUI with q or ctrl+c
+
+# TUI only works on gnome-terminal, xterm, alacritty, Konsole...
+# The program without TUI can be found in the first release (may have cache errors)
 ```
 
 ## Author message
