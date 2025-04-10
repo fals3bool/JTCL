@@ -1,6 +1,7 @@
 #include <ncurses.h>
 #include <string.h>
 #include <stdlib.h>
+#include <unistd.h>
 
 #include "fs.h"
 #include "tcat.h"
@@ -82,11 +83,8 @@ void init();
 void set_callback(Button *self, MEVENT event)
 {
     endwin();
-    printf("Presioná Enter para volver...\n");
     int result = cpywar(WARFILE, CATALINA_HOME);
-    if (result != 0)
-        perror("copy file");
-    getchar();
+    sleep(1);
     manage_result(server, result, "Archivo WARFILE copiado exitosamente", "No se pudo copiar el archivo WARFILE");
     init();
 }
@@ -94,11 +92,8 @@ void set_callback(Button *self, MEVENT event)
 void run_callback(Button *self, MEVENT event)
 {
     endwin();
-    printf("Presioná Enter para volver...\n");
     int result = runsh(startup, WARFILE, CATALINA_HOME);
-    if (result != 0)
-        perror("tomcat");
-    getchar();
+    sleep(1);
     manage_result(server, result, "Servidor encendido", "Error al intentar encender tomcat");
     if (result == 0)
     {
@@ -110,11 +105,8 @@ void run_callback(Button *self, MEVENT event)
 void stop_callback(Button *self, MEVENT event)
 {
     endwin();
-    printf("Presioná Enter para volver...\n");
     int result = runsh(shutdown, WARFILE, CATALINA_HOME);
-    if (result != 0)
-        perror("copy file");
-    getchar();
+    sleep(1);
     manage_result(server, result, "Servidor tomcat detenido", "Error al intentar apagar tomcat");
     if (result == 0)
     {
@@ -126,11 +118,8 @@ void stop_callback(Button *self, MEVENT event)
 void rm_callback(Button *self, MEVENT event)
 {
     endwin();
-    printf("Presioná Enter para volver...\n");
     int result = rmwar(WARFILE, CATALINA_HOME);
-    if (result != 0)
-        perror("copy file");
-    getchar();
+    sleep(1);
     manage_result(server, result, "WARFILE y folder eliminados", "No se pudo eliminar el WARFILE o la carpeta");
     init();
 }
