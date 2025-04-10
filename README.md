@@ -1,5 +1,5 @@
 # JTCL
-JTCL (Java Tomcat Launcher) is command line application written in C that helps running a deploying a java web application locally.
+JTCL (Java Tomcat Launcher) is command line application written in C that helps deploying a java web application locally.
 
 ## Download & Install
 
@@ -47,7 +47,7 @@ WAR="war_file_without_extension" jcatl run
 # run tomcat/shutdown
 WAR="war_file_without_extension" jcatl stop
 
-# remove war file from $CATALINA_HOME/webapps
+# remove war file & folder from $CATALINA_HOME/webapps
 WAR="war_file_without_extension" jcatl remove
 ```
 
