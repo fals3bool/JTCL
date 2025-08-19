@@ -7,7 +7,7 @@
 static char *CATALINA_HOME;
 static char *WARFILE;
 
-void readenv();
+int readenv(int verbose);
 int runargs(char **argv, int len);
 
 const char *commands[3] = {"clean", "build", "run"};
@@ -20,15 +20,17 @@ int main(int argc, char **argv) {
     printf("jtcl help: for help :P\n\n");
     return -1;
   }
-  if(streq(argv[1], "help")){
+  if (streq(argv[1], "help")) {
     printf("jtcl help doc\n\n");
-    printf(" $jtcl clean\n  - Removes the .war file and folder from tomcat/webapps/\n   Uses the same name as the .war file inside /target/ folder.\n\n");
-    printf(" $jtcl build\n  - Builds using maven and copy the .war file inside tomcat/webapps/\n\n");
+    printf(" $jtcl clean\n  - Removes the .war file and folder from "
+           "tomcat/webapps/\n   Uses the same name as the .war file inside "
+           "/target/ folder.\n\n");
+    printf(" $jtcl build\n  - Builds using maven and copy the .war file inside "
+           "tomcat/webapps/\n\n");
     printf(" $jtcl run\n  - Starts Tomcat server\n\n");
     printf(" Run multiple commands at once\n\n  $ jtcl clean build run\n\n");
     return 0;
   }
-  readenv();
 
   int result = runargs(argv, argc);
   if (result != 0)
@@ -36,19 +38,24 @@ int main(int argc, char **argv) {
   return result;
 }
 
-void readenv() {
+int readenv(int verbose) {
   CATALINA_HOME = getenv("CATALINA_HOME");
   WARFILE = findwar("target/");
 
   if (!CATALINA_HOME) {
-    printf("CATALINA_HOME no está en el path\n\n");
-    exit(-1);
+    if (verbose)
+      printf("CATALINA_HOME no está en el path\n\n");
+    return 1;
   }
   if (!WARFILE) {
-    printf("No se ha encontrado el archivo {.war}. Ejecute jtcl en la carpeta "
-           "del proyecto java (carpeta padre de /target/).");
-    exit(-1);
+    if (verbose)
+      printf(
+        "No se ha encontrado el archivo {.war}. Ejecute jtcl en la carpeta "
+        "del proyecto java (carpeta padre de /target/).");
+    return 1;
   }
+
+  return 0;
 }
 
 int runargs(char **argv, int len) {
@@ -56,13 +63,19 @@ int runargs(char **argv, int len) {
 
   for (int i = 1; i < len; i++) {
     if (streq(argv[i], commands[0])) {
-      result += cleanwar(WARFILE, CATALINA_HOME);
+      if (readenv(0))
+        continue;
+      cleanwar(WARFILE, CATALINA_HOME);
+      printf(" > CLEANED\n");
     } else if (streq(argv[i], commands[1])) {
       result += system("mvn clean package");
-      if (result == 0)
+      result += readenv(1);
+      if (result == 0) {
         result += cpywar(WARFILE, CATALINA_HOME);
+      }
     } else if (streq(argv[i], commands[2])) {
-      result += system("$CATALINA_HOME/bin/catalina.sh run");
+      if (result == 0)
+        result += system("$CATALINA_HOME/bin/catalina.sh run");
     } else {
       printf("Unknown command: {%s}", argv[i]);
       return -1;
