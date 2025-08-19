@@ -1,33 +1,29 @@
 # JTCL
-JTCL (Java Tomcat Launcher) is command line application written in C that helps deploying a java web application locally.
+JTCL (Java Tomcat Launcher) is a light-weight CLI tool written in C that helps deploying a java web application locally.
+
+No need of `.sh` files or writing long commands. Just one small command and everything is running.
+
+(Just for testing locally)
 
 ## Download & Install
 
 ###  Download bin file
-Download `jcatl` from the lastest release.
+Download `jtcl` from the lastest release.
 
 ###  Build it yourself
 
 `linux`
 ```shell
-# need some libs
-sudo apt update
-sudo apt install libncurses5-dev libncursesw5-dev
-# or
-sudo pacman -S ncurses
+# clone this-repo
+cmake -S . -B build
+cmake --build build
 ```
 
-`windows`<br>
-```
-I dunno... It won't work anyways
-```
-
-`build it!! :)`
+`windows`
 ```shell
-git clone this-repo
-cd build/
-cmake ..
-make
+install linux :)
+# Uses some posix functions, sorry :(
+# May work with Cygwin, though
 ```
 
 ---
@@ -39,7 +35,9 @@ sudo nano /etc/profile
 
 # write inside '/etc/profile'
 export JTCL_HOME="/home/fabri/Data/code/c/JTCL"
-export PATH=$JTCL_HOME/build/bin:$PATH
+export PATH=$JTCL_HOME/build:$PATH
+# Although, I recommend moving the executable to another folder, like:
+#    /opt/jtcl/bin.
 
 # Also needs CATALINA_HOME
 export CATALINA_HOME="/opt/apache-tomcat"
@@ -47,40 +45,21 @@ export CATALINA_HOME="/opt/apache-tomcat"
 
 ## How to Use
 
-### Build your war file
 ```shell
-mvn clean package
-```
+# Inside your java folder where pom.xml & /target/ folder are located.
+jtcl clean: Clean tomcat/webapps/ folder.
+jtcl build: Build & deploy it into tomcat/webapps/ folder.
+jtcl run: Start tomcat.
 
-### Use JTCL
-```shell
-# copy target/war_file to $CATALINA_HOME/webapps
-WAR="war_file_without_extension" jcatl set
-
-# run tomcat/startup
-WAR="war_file_without_extension" jcatl run
-
-# run tomcat/shutdown
-WAR="war_file_without_extension" jcatl stop
-
-# remove war file & folder from $CATALINA_HOME/webapps
-WAR="war_file_without_extension" jcatl remove
-
-# open text user interface (TUI)
-WAR="war_file_without_extension" jcatl listen
-# you'll see 4 clickable buttons
-[ SET ]  [ RUN ]  [ STOP ]  [ REMOVE ]
-# exit TUI with q or ctrl+c
-
-# TUI only works on gnome-terminal, xterm, alacritty, Konsole...
-# The program without TUI can be found in the first release (may have cache errors)
+# Can run multiple commands at once:
+jtcl clean build run
 ```
 
 ## Author message
 
 This program is just a simple implementation made to simplify and speed up my work. Some IDEs have plugins for this but I couldn't find any that fit my requirements: `just something simple, small & quick`.
 
-Even though it's still improvable, I may not change or update this repo in a while (unless I need it).
+I may not change or update this repo in a while (unless I need it).
 
-`(Los mensajes de la consola están en spanglish)`
+`(Alerta de spanglish)`
 
