@@ -1,99 +1,100 @@
 #include "fs.h"
 
+#include <dirent.h>
+
 #include <stdio.h>
-#include <string.h>
 #include <stdlib.h>
+#include <string.h>
 
 const char *webfolder = "/webapps/";
 const char *targetfolder = "target/";
 const char *fext = ".war";
 
-int cpyFile(const char *src, const char *dest)
-{
-    FILE *filer = fopen(src, "rb");
-    if (filer == NULL)
-    {
-        return -2;
-    }
-
-    FILE *filew = fopen(dest, "wb");
-    if (filew == NULL)
-    {
-        fclose(filer);
-        return -3;
-    }
-
-    char buffer[1024];
-    size_t bytes;
-
-    while ((bytes = fread(buffer, 1, sizeof(buffer), filer)) > 0)
-    {
-        fwrite(buffer, 1, bytes, filew);
-    }
-
-    fclose(filer);
-    fclose(filew);
-
+int strendcmp(const char *str, const char *suffix) {
+  if (!str || !suffix)
     return 0;
+  size_t lenstr = strlen(str);
+  size_t lensuffix = strlen(suffix);
+  if (lensuffix > lenstr)
+    return 0;
+  return strncmp(str + lenstr - lensuffix, suffix, lensuffix) == 0;
 }
 
-int cpywar(const char *WARFILE, const char *CATALINA_HOME)
-{
-    // char cwd[PATH_MAX]; // still dont know if it would be usefull on windows
-    // if (!getcwd(cwd, sizeof(cwd)))
-    // {
-    //     perror("getcwd");
-    //     return 1;
-    // }
-
-    size_t srcsize = strlen(targetfolder) + strlen(WARFILE) + strlen(fext);
-    size_t destsize = strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE) + strlen(fext);
-    char *src = malloc(sizeof(char) * srcsize);
-    strcpy(src, "");
-    strcat(src, targetfolder);
-    strcat(src, WARFILE);
-    strcat(src, fext);
-    char *dest = malloc(sizeof(char) * destsize);
-    strcpy(dest, "");
-    strcat(dest, CATALINA_HOME);
-    strcat(dest, webfolder);
-    strcat(dest, WARFILE);
-    strcat(dest, fext);
-
-    printf("SRC: %s\n", src);
-    printf("DEST: %s\n", dest);
-
-    int result = cpyFile(src, dest);
-
-    free(src);
-    free(dest);
-
-    return result;
+char *findwar(char *targetfolder) {
+  DIR *dirp = opendir(targetfolder);
+  if (!dirp)
+    return NULL;
+  struct dirent *dp;
+  while ((dp = readdir(dirp)) != NULL) {
+    if (strendcmp(dp->d_name, fext)) {
+      closedir(dirp);
+      return dp->d_name;
+    }
+  }
+  closedir(dirp);
+  return NULL;
 }
 
-int rmwar(const char *WARFILE, const char *CATALINA_HOME)
-{
-    size_t size = strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE) + strlen(fext);
-    char *file = malloc(sizeof(char) * size);
-    strcpy(file, "");
-    strcat(file, CATALINA_HOME);
-    strcat(file, webfolder);
-    strcat(file, WARFILE);
-    strcat(file, fext);
-    int r = remove(file) + rmfolder(WARFILE, CATALINA_HOME);
-    free(file);
-    return r;
+int cpyfile(const char *src, const char *dest) {
+  FILE *filer = fopen(src, "rb");
+  if (filer == NULL) {
+    return -2;
+  }
+
+  FILE *filew = fopen(dest, "wb");
+  if (filew == NULL) {
+    fclose(filer);
+    return -3;
+  }
+
+  char buffer[1024];
+  size_t bytes;
+
+  while ((bytes = fread(buffer, 1, sizeof(buffer), filer)) > 0) {
+    fwrite(buffer, 1, bytes, filew);
+  }
+
+  fclose(filer);
+  fclose(filew);
+
+  return 0;
 }
 
-int rmfolder(const char *WARFILE, const char *CATALINA_HOME)
-{
-    const char *cmd_temp = "rm -rf ";
-    size_t size = strlen(cmd_temp) + strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE);
-    char *cmd = (char *)malloc(size);
-    strcpy(cmd, "");
-    strcat(cmd, cmd_temp);
-    strcat(cmd, CATALINA_HOME);
-    strcat(cmd, webfolder);
-    strcat(cmd, WARFILE);
-    return system(cmd);
+int cpywar(const char *WARFILE, const char *CATALINA_HOME) {
+  size_t srcsize = strlen(targetfolder) + strlen(WARFILE) + 1;
+  size_t destsize = strlen(CATALINA_HOME) + strlen(webfolder) +
+                    strlen(WARFILE) + strlen(fext);
+  char src[srcsize];
+  snprintf(src, srcsize, "%s%s", targetfolder, WARFILE);
+  char dest[destsize];
+  snprintf(dest, destsize, "%s%s%s", CATALINA_HOME, webfolder, WARFILE);
+
+  printf("SRC: %s\n", src);
+  printf("DEST: %s\n", dest);
+
+  int result = cpyfile(src, dest);
+
+  return result;
+}
+
+int cleanwar(const char *WARFILE, const char *CATALINA_HOME) {
+  size_t size = strlen(CATALINA_HOME) + strlen(webfolder) + strlen(WARFILE) + 1;
+  char file[size];
+  snprintf(file, size, "%s%s%s", CATALINA_HOME, webfolder, WARFILE);
+  int r = remove(file) + rmwarfolder(WARFILE, CATALINA_HOME);
+  return r;
+}
+
+int rmwarfolder(const char *WARFILE, const char *CATALINA_HOME) {
+  const char *cmd_tmpl = "rm -rf ";
+  char warfolder[strlen(WARFILE) - 3];
+  strncpy(warfolder, WARFILE, strlen(WARFILE) - 4);
+  size_t size = strlen(cmd_tmpl) + strlen(CATALINA_HOME) + strlen(webfolder) +
+                strlen(WARFILE);
+  char cmd[size + 1];
+  snprintf(cmd, size, "%s%s%s%s", cmd_tmpl, CATALINA_HOME, webfolder,
+           warfolder);
+  cmd[size] = '\0';
+  int result = system(cmd);
+  return result;
 }
