@@ -1,3 +1,4 @@
+#include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,6 +14,21 @@ int runargs(char **argv, int len);
 const char *commands[3] = {"clean", "build", "run"};
 
 int streq(const char *s1, const char *s2) { return strcmp(s1, s2) == 0; }
+int strneq(const char *s1, const char *ss, ...) {
+  va_list args;
+  va_start(args, ss);
+
+  if (streq(s1, ss))
+    return 1;
+
+  char *s_i;
+  while ((s_i = va_arg(args, char *)) != NULL)
+    if (streq(s1, s_i))
+      return 1;
+
+  va_end(args);
+  return 0;
+}
 
 int main(int argc, char **argv) {
   if (argc < 2) {
@@ -20,21 +36,22 @@ int main(int argc, char **argv) {
     printf("jtcl help: for help :P\n\n");
     return -1;
   }
-  if (streq(argv[1], "help")) {
-    printf("jtcl help doc\n\n");
-    printf(" $jtcl clean\n  - Removes the .war file and folder from "
-           "tomcat/webapps/\n   Uses the same name as the .war file inside "
-           "/target/ folder.\n\n");
-    printf(" $jtcl build\n  - Builds using maven and copy the .war file inside "
-           "tomcat/webapps/\n\n");
-    printf(" $jtcl run\n  - Starts Tomcat server\n\n");
-    printf(" Run multiple commands at once\n\n  $ jtcl clean build run\n\n");
+  if (strneq(argv[1], "help", "h", "-h", "--help", NULL)) {
+    printf("JTCL - JTomcatLauncher [1.3.0]\n  Build & Deploy WAR files to Tomcat\n\n");
+    printf("Uso:\n  $ jtcl <command>\n\n");
+    printf("Comandos:\n");
+    printf("  clean     Limpia /tomcat/webapps/. Elimina el .war y su carpeta.\n");
+    printf("  build     Ejecuta 'mvn clean package' y copia el .war en /tomcat/webapps/.\n");
+    printf("  run       Inicia Tomcat.\n\n");
+    printf("Variables de Entorno:\n");
+    printf("  $CATALINA_HOME     Ruta al directorio de Tomcat\n\n\n");
+    printf("Ejemplo:\n\n  $ export CATALINA_HOME=/opt/apache-tomcat-11.0.5\n  $ jtcl clean build run\n\n");
     return 0;
   }
 
   int result = runargs(argv, argc);
-  if (result != 0)
-    perror("jtcl");
+  // if (result != 0)
+  // perror("jtcl");
   return result;
 }
 
@@ -50,8 +67,8 @@ int readenv(int verbose) {
   if (!WARFILE) {
     if (verbose)
       printf(
-        "No se ha encontrado el archivo {.war}. Ejecute jtcl en la carpeta "
-        "del proyecto java (carpeta padre de /target/).");
+        "No se ha encontrado el archivo WAR. Ejecute jtcl en la carpeta "
+        "del proyecto java (carpeta padre de /target/).\n\n");
     return 1;
   }
 
@@ -77,7 +94,7 @@ int runargs(char **argv, int len) {
       if (result == 0)
         result += system("$CATALINA_HOME/bin/catalina.sh run");
     } else {
-      printf("Unknown command: {%s}", argv[i]);
+      printf("Unknown command: {%s}\n\n", argv[i]);
       return -1;
     }
   }
