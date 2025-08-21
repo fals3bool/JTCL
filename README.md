@@ -34,7 +34,7 @@ install linux :)
 sudo nano /etc/profile
 
 # write inside '/etc/profile'
-export JTCL_HOME="/home/fabri/Data/code/c/JTCL"
+export JTCL_HOME="/path/to/jtcl/clone/folder"
 export PATH=$JTCL_HOME/build:$PATH
 # Although, I recommend moving the executable to another folder, like:
 #    /opt/jtcl/bin.
@@ -47,8 +47,8 @@ export CATALINA_HOME="/opt/apache-tomcat"
 
 ```shell
 # Inside your java folder where pom.xml & /target/ folder are located.
-jtcl clean: Clean tomcat/webapps/ folder.
-jtcl build: Build & deploy it into tomcat/webapps/ folder.
+jtcl clean: Clean tomcat/webapps/ .war & folder.
+jtcl build: 'mvn clean package' & deploy .war into tomcat/webapps/ folder.
 jtcl run: Start tomcat.
 
 # Can run multiple commands at once:
