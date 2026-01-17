@@ -9,5 +9,3 @@ include_directories(include)
 file(GLOB SOURCES src/*.c)
 add_executable(jtcl ${SOURCES})
 
-# target_link_libraries(my_program argp)
-

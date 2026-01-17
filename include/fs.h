@@ -1,10 +1,11 @@
-#ifndef JTCL_FS
-#define JTCL_FS
+#ifndef JTCL_FILE_SYSTEM
+#define JTCL_FILE_SYSTEM
 
 /**
- * Finds a war file inside the current project folder
+ * Finds war file location and name by parsing pom.xml
+ * Returns allocated string with full path to WAR file, or NULL if not found
  */
-char *findwar(char *targetfolder);
+char *findwar(void);
 
 /**
  * Copies the WARFILE into $CATALINA_HOME/webapps/
