@@ -1,4 +1,4 @@
-#include "filesystem.h"
+#include "application.h"
 #include "platform.h"
 #include "strings.h"
 
@@ -77,7 +77,7 @@ char *extract_tag(char *file, char *tag) {
   return content;
 }
 
-char *findwar_from_pom(char *artifact_id, char *version, char *packaging) {
+char *find_war_from_pom(char *artifact_id, char *version, char *packaging) {
   artifact_id = extract_tag("pom.xml", "artifactId");
   version = extract_tag("pom.xml", "version");
 
@@ -110,11 +110,11 @@ void mfree(char *ptr) {
     free(ptr);
 }
 
-char *findwar(void) {
+char *get_application_path(void) {
   char *artifact_id = NULL;
   char *version = NULL;
   char *packaging = NULL;
-  char *war_path = findwar_from_pom(artifact_id, version, packaging);
+  char *war_path = find_war_from_pom(artifact_id, version, packaging);
 
   mfree(artifact_id);
   mfree(version);
@@ -155,10 +155,10 @@ const char *get_filename(const char *path) {
   return filename;
 }
 
-int cpywar(const char *WARFILE, const char *CATALINA_HOME) {
-  const char *filename = get_filename(WARFILE);
+int deploy_app(const char *path, const char *catalina_home) {
+  const char *filename = get_filename(path);
 
-  char *webapps_path = join_path(CATALINA_HOME, webfolder);
+  char *webapps_path = join_path(catalina_home, webfolder);
   if (!webapps_path)
     return 1;
 
@@ -167,47 +167,19 @@ int cpywar(const char *WARFILE, const char *CATALINA_HOME) {
   if (!dest)
     return 1;
 
-  printf("SRC: %s\n", WARFILE);
+  printf("SRC: %s\n", path);
   printf("DEST: %s\n", dest);
 
-  int result = cpyfile(WARFILE, dest);
+  int result = cpyfile(path, dest);
   free(dest);
   return result;
 }
 
-int cleanwar(const char *WARFILE, const char *CATALINA_HOME) {
-  const char *filename = get_filename(WARFILE);
+int remove_app_folder(const char *filename, const char *catalina_home) {
 
-  char *webapps_path = join_path(CATALINA_HOME, webfolder);
-  if (!webapps_path)
-    return 1;
-
-  char *file_path = join_path(webapps_path, filename);
-  free(webapps_path);
-  if (!file_path)
-    return 1;
-
-  int remove_result = remove(file_path);
-  int folder_result = rmwarfolder(WARFILE, CATALINA_HOME);
-
-  free(file_path);
-  return remove_result + folder_result;
-}
-
-int rmwarfolder(const char *WARFILE, const char *CATALINA_HOME) {
-  // Extract just the filename from the full path
-  const char *filename = strrchr(WARFILE, PATH_SEPARATOR);
-  if (!filename) {
-    filename = WARFILE;
-  } else {
-    filename++; // Skip the path separator
-  }
-
-  // Remove .war extension to get folder name
   size_t name_len = strlen(filename);
-  if (strendswith(filename, ".war")) {
-    name_len -= 4; // Remove ".war"
-  }
+  if (strendswith(filename, ".war"))
+    name_len -= 4;
 
   char *warfolder = malloc(name_len + 1);
   if (!warfolder)
@@ -216,7 +188,7 @@ int rmwarfolder(const char *WARFILE, const char *CATALINA_HOME) {
   strncpy(warfolder, filename, name_len);
   warfolder[name_len] = '\0';
 
-  char *webapps_path = join_path(CATALINA_HOME, webfolder);
+  char *webapps_path = join_path(catalina_home, webfolder);
   if (!webapps_path) {
     free(warfolder);
     return 1;
@@ -232,4 +204,23 @@ int rmwarfolder(const char *WARFILE, const char *CATALINA_HOME) {
   int result = remove_directory(folder_path);
   free(folder_path);
   return result;
+}
+
+int remove_app(const char *path, const char *catalina_home) {
+  const char *filename = get_filename(path);
+
+  char *webapps_path = join_path(catalina_home, webfolder);
+  if (!webapps_path)
+    return 1;
+
+  char *file_path = join_path(webapps_path, filename);
+  free(webapps_path);
+  if (!file_path)
+    return 1;
+
+  int remove_result = remove(file_path);
+  int folder_result = remove_app_folder(filename, catalina_home);
+
+  free(file_path);
+  return remove_result + folder_result;
 }

@@ -1,4 +1,4 @@
-#include "filesystem.h"
+#include "application.h"
 #include "platform.h"
 #include "strings.h"
 
@@ -8,8 +8,8 @@
 
 #define JTCL_VERSION "1.4.4"
 
-static char *CATALINA_HOME;
-static char *WARFILE;
+static char *catalina_home;
+static char *application_path;
 
 int readenv(int verbose);
 int runargs(char **argv, int len);
@@ -50,15 +50,15 @@ int main(int argc, char **argv) {
 }
 
 int readenv(int verbose) {
-  CATALINA_HOME = getenv("CATALINA_HOME");
-  WARFILE = findwar();
+  catalina_home = getenv("CATALINA_HOME");
+  application_path = get_application_path();
 
-  if (!CATALINA_HOME) {
+  if (!catalina_home) {
     if (verbose)
       printf("CATALINA_HOME is not set\n\n");
     return 0;
   }
-  if (!WARFILE) {
+  if (!application_path) {
     if (verbose)
       printf("WAR file not found. Ensure pom.xml exists "
              "and project is configured with packaging 'war'.\n\n");
@@ -75,14 +75,14 @@ int runargs(char **argv, int len) {
     if (streq(argv[i], commands[0])) {
       if (!readenv(0))
         continue;
-      cleanwar(WARFILE, CATALINA_HOME);
+      remove_app(application_path, catalina_home);
       printf(" > CLEANED\n");
     } else if (streq(argv[i], commands[1])) {
       int maven_error = system("mvn clean package");
       int env_success = readenv(1);
       // Attempt to copy regardless of Maven result
       if (env_success)
-        errors += cpywar(WARFILE, CATALINA_HOME);
+        errors += deploy_app(application_path, catalina_home);
       else
         errors++;
 
@@ -93,14 +93,14 @@ int runargs(char **argv, int len) {
       }
     } else if (streq(argv[i], commands[2])) {
       if (readenv(1))
-        errors += cpywar(WARFILE, CATALINA_HOME);
+        errors += deploy_app(application_path, catalina_home);
       else
         printf("Error: Couldn't deploy application\n");
     } else if (streq(argv[i], commands[3])) {
       if (!readenv(1))
         continue;
       if (!errors) {
-        char *tomcat_cmd = get_tomcat_command(CATALINA_HOME);
+        char *tomcat_cmd = get_tomcat_command(catalina_home);
         if (tomcat_cmd) {
           errors += system(tomcat_cmd);
           free(tomcat_cmd);
