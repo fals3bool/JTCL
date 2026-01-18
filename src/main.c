@@ -6,7 +6,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define JTCL_VERSION "1.4.3"
+#define JTCL_VERSION "1.4.4"
 
 static char *CATALINA_HOME;
 static char *WARFILE;
@@ -14,11 +14,12 @@ static char *WARFILE;
 int readenv(int verbose);
 int runargs(char **argv, int len);
 
-const char *commands[3] = {"clean", "build", "run"};
+const char *commands[4] = {"clean", "build", "deploy", "run"};
 
 int main(int argc, char **argv) {
   if (argc < 2) {
-    printf("jtcl [%s|%s|%s]\n\n", commands[0], commands[1], commands[2]);
+    printf("jtcl [%s|%s|%s|%s]\n\n", commands[0], commands[1], commands[2],
+           commands[3]);
     printf("jtcl help: for help :P\n\n");
     return -1;
   }
@@ -30,9 +31,11 @@ int main(int argc, char **argv) {
     printf("Commands:\n");
     printf("  clean     Clean tomcat/webapps/. Remove .war file and its "
            "folder.\n");
-    printf("  build     Execute 'mvn clean package' and copy .war (from "
-           "pom.xml) to tomcat/webapps/.\n");
-    printf("  run       Start Tomcat.\n\n");
+    printf("  build     Execute 'mvn clean package' and deploy .war to "
+           "tomcat/webapps/.\n");
+    printf("  deploy    Deploy .war to tomcat/webapps/ without "
+           "building it again.\n");
+    printf("  run       Start Tomcat Server.\n\n");
     printf("Environmental Variables:\n");
     printf("  $CATALINA_HOME     Path to Tomcat directory\n\n\n");
     printf("Example:\n\n  $ export CATALINA_HOME=/opt/apache-tomcat\n  "
@@ -84,9 +87,16 @@ int runargs(char **argv, int len) {
         errors++;
 
       if (maven_error && env_success) {
-        printf("Maven build failed! Old version deployed\n");
+        printf("Warning: Maven build failed! Old version deployed\n");
+      } else if (!env_success) {
+        printf("Error: Couldn't deploy application");
       }
     } else if (streq(argv[i], commands[2])) {
+      if (readenv(1))
+        errors += cpywar(WARFILE, CATALINA_HOME);
+      else
+        printf("Error: Couldn't deploy application\n");
+    } else if (streq(argv[i], commands[3])) {
       if (!readenv(1))
         continue;
       if (!errors) {
