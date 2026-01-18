@@ -1,16 +1,14 @@
-#define _GNU_SOURCE
 #include "fs.h"
+#include "platform.h"
 #include "str.h"
 
-#include <dirent.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-static const char *webfolder = "/webapps/";
+static const char *webfolder = "webapps";
 
 // Helper function to extract XML tag content (supports multiline)
-// No tengo ni puta idea que es esto, lo hizo la ia... :(
 char *extract_tag_content(FILE *pom, const char *tag) {
   char open_tag[256];
   char close_tag[256];
@@ -147,51 +145,62 @@ int cpyfile(const char *src, const char *dest) {
   return 0;
 }
 
-int cpywar(const char *WARFILE, const char *CATALINA_HOME) {
-  // Extract just the filename from the full path
-  const char *filename = strrchr(WARFILE, '/');
+const char *get_filename(const char *path) {
+  const char *filename = strrchr(path, PATH_SEPARATOR);
   if (!filename) {
-    filename = WARFILE;
+    filename = path;
   } else {
-    filename++; // Skip the '/'
+    filename++; // Skip the path separator
   }
+  return filename;
+}
 
-  size_t destsize =
-      strlen(CATALINA_HOME) + strlen(webfolder) + strlen(filename) + 1;
-  char dest[destsize];
-  snprintf(dest, destsize, "%s%s%s", CATALINA_HOME, webfolder, filename);
+int cpywar(const char *WARFILE, const char *CATALINA_HOME) {
+  const char *filename = get_filename(WARFILE);
+
+  char *webapps_path = join_path(CATALINA_HOME, webfolder);
+  if (!webapps_path)
+    return 1;
+
+  char *dest = join_path(webapps_path, filename);
+  free(webapps_path);
+  if (!dest)
+    return 1;
 
   printf("SRC: %s\n", WARFILE);
   printf("DEST: %s\n", dest);
 
   int result = cpyfile(WARFILE, dest);
+  free(dest);
   return result;
 }
 
 int cleanwar(const char *WARFILE, const char *CATALINA_HOME) {
-  // Extract just the filename from the full path
-  const char *filename = strrchr(WARFILE, '/');
-  if (!filename) {
-    filename = WARFILE;
-  } else {
-    filename++; // Skip the '/'
-  }
+  const char *filename = get_filename(WARFILE);
 
-  size_t size =
-      strlen(CATALINA_HOME) + strlen(webfolder) + strlen(filename) + 1;
-  char file[size];
-  snprintf(file, size, "%s%s%s", CATALINA_HOME, webfolder, filename);
-  int r = remove(file) + rmwarfolder(WARFILE, CATALINA_HOME);
-  return r;
+  char *webapps_path = join_path(CATALINA_HOME, webfolder);
+  if (!webapps_path)
+    return 1;
+
+  char *file_path = join_path(webapps_path, filename);
+  free(webapps_path);
+  if (!file_path)
+    return 1;
+
+  int remove_result = remove(file_path);
+  int folder_result = rmwarfolder(WARFILE, CATALINA_HOME);
+
+  free(file_path);
+  return remove_result + folder_result;
 }
 
 int rmwarfolder(const char *WARFILE, const char *CATALINA_HOME) {
   // Extract just the filename from the full path
-  const char *filename = strrchr(WARFILE, '/');
+  const char *filename = strrchr(WARFILE, PATH_SEPARATOR);
   if (!filename) {
     filename = WARFILE;
   } else {
-    filename++; // Skip the '/'
+    filename++; // Skip the path separator
   }
 
   // Remove .war extension to get folder name
@@ -200,17 +209,27 @@ int rmwarfolder(const char *WARFILE, const char *CATALINA_HOME) {
     name_len -= 4; // Remove ".war"
   }
 
-  char warfolder[name_len + 1];
+  char *warfolder = malloc(name_len + 1);
+  if (!warfolder)
+    return 1;
+
   strncpy(warfolder, filename, name_len);
   warfolder[name_len] = '\0';
 
-  const char *cmd_tmpl = "rm -rf ";
-  size_t size = strlen(cmd_tmpl) + strlen(CATALINA_HOME) + strlen(webfolder) +
-                name_len + 1;
-  char cmd[size];
-  snprintf(cmd, size, "%s%s%s%s", cmd_tmpl, CATALINA_HOME, webfolder,
-           warfolder);
+  char *webapps_path = join_path(CATALINA_HOME, webfolder);
+  if (!webapps_path) {
+    free(warfolder);
+    return 1;
+  }
 
-  int result = system(cmd);
+  char *folder_path = join_path(webapps_path, warfolder);
+  free(webapps_path);
+  free(warfolder);
+
+  if (!folder_path)
+    return 1;
+
+  int result = remove_directory(folder_path);
+  free(folder_path);
   return result;
 }

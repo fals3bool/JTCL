@@ -1,11 +1,12 @@
 #include "fs.h"
+#include "platform.h"
 #include "str.h"
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#define JTCL_VERSION "1.4.2"
+#define JTCL_VERSION "1.4.3"
 
 static char *CATALINA_HOME;
 static char *WARFILE;
@@ -23,17 +24,18 @@ int main(int argc, char **argv) {
   }
   if (strneq(argv[1], "help", "h", "-h", "--help", NULL)) {
     printf("JTCL - Java Tomcat Launcher [%s]\n  Build & Deploy WAR files to "
-           "Tomcat\n\n", JTCL_VERSION);
+           "Tomcat\n\n",
+           JTCL_VERSION);
     printf("Usage:\n  $ jtcl <command>\n\n");
-    printf("Comands:\n");
-    printf(
-        "  clean     Limpia /tomcat/webapps/. Elimina el .war y su carpeta.\n");
-    printf("  build     Ejecuta 'mvn clean package' y copia el .war (desde "
-           "pom.xml) en /tomcat/webapps/.\n");
-    printf("  run       Inicia Tomcat.\n\n");
+    printf("Commands:\n");
+    printf("  clean     Clean tomcat/webapps/. Remove .war file and its "
+           "folder.\n");
+    printf("  build     Execute 'mvn clean package' and copy .war (from "
+           "pom.xml) to tomcat/webapps/.\n");
+    printf("  run       Start Tomcat.\n\n");
     printf("Environmental Variables:\n");
-    printf("  $CATALINA_HOME     Ruta al directorio de Tomcat\n\n\n");
-    printf("Ejemplo:\n\n  $ export CATALINA_HOME=/opt/apache-tomcat\n  "
+    printf("  $CATALINA_HOME     Path to Tomcat directory\n\n\n");
+    printf("Example:\n\n  $ export CATALINA_HOME=/opt/apache-tomcat\n  "
            "$ jtcl clean build run\n\n");
     return 0;
   }
@@ -50,14 +52,13 @@ int readenv(int verbose) {
 
   if (!CATALINA_HOME) {
     if (verbose)
-      printf("CATALINA_HOME no está en el path\n\n");
+      printf("CATALINA_HOME is not set\n\n");
     return 0;
   }
   if (!WARFILE) {
     if (verbose)
-      printf(
-          "No se ha encontrado el archivo WAR. Asegúrese de que pom.xml exista "
-          "y que el proyecto esté configurado como packaging 'war'.\n\n");
+      printf("WAR file not found. Ensure pom.xml exists "
+             "and project is configured with packaging 'war'.\n\n");
     return 0;
   }
 
@@ -86,8 +87,18 @@ int runargs(char **argv, int len) {
         printf("Maven build failed! Old version deployed\n");
       }
     } else if (streq(argv[i], commands[2])) {
-      if (!errors)
-        errors += system("$CATALINA_HOME/bin/catalina.sh run");
+      if (!readenv(1))
+        continue;
+      if (!errors) {
+        char *tomcat_cmd = get_tomcat_command(CATALINA_HOME);
+        if (tomcat_cmd) {
+          errors += system(tomcat_cmd);
+          free(tomcat_cmd);
+        } else {
+          printf("Error: Tomcat startup script not found\n");
+          errors++;
+        }
+      }
     } else {
       printf("Unknown command: {%s}\n\n", argv[i]);
       return -1;

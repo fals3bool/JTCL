@@ -9,3 +9,8 @@ include_directories(include)
 file(GLOB SOURCES src/*.c)
 add_executable(jtcl ${SOURCES})
 
+# Platform-specific definitions
+if(WIN32)
+    target_compile_definitions(jtcl PRIVATE _WIN32)
+endif()
+
