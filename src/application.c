@@ -169,8 +169,7 @@ int deploy_app(const char *path, const char *catalina_home) {
   if (!dest)
     return ERR_ALLOC;
 
-  printf("SRC: %s\n", path);
-  printf("DEST: %s\n", dest);
+  printf("INFO: deployed -> %s\n", dest);
 
   int result = cpyfile(path, dest);
   free(dest);

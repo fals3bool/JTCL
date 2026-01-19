@@ -1,6 +1,7 @@
 #include "command.h"
 #include "application.h"
 #include "exception.h"
+#include "platform.h"
 #include "strings.h"
 
 #include <stdio.h>
@@ -12,14 +13,29 @@ static char *application_path;
 
 result_code_t clean() { return remove_app(application_path, catalina_home); }
 
-result_code_t deploy() {
-  // deploy_app(application_path, catalina_home);
+result_code_t deploy() { return deploy_app(application_path, catalina_home); }
+
+result_code_t build() {
+  int build_result = system("mvn clean package");
+  int deploy_result = deploy_app(application_path, catalina_home);
+  if (build_result != 0 && deploy_result == 0)
+    return ERR_BUILD_BUT_DEPLOYED;
+  if (build_result)
+    return ERR_BUILD;
+  if (deploy_result)
+    return ERR_DEPLOY;
   return OK;
 }
 
-result_code_t build() { return OK; }
-
-result_code_t run() { return OK; }
+result_code_t run() {
+  char *tomcat_cmd = get_tomcat_command(catalina_home);
+  if (!tomcat_cmd)
+    return ERR_TOMCAT_STARTUP;
+  int tomcat_result = system(tomcat_cmd);
+  if (tomcat_result != 0)
+    return ERR_TOMCAT_INTERRUPT;
+  return OK;
+}
 
 result_code_t help() {
   printf("JTCL - Java Tomcat Launcher [%s]\n"
@@ -39,7 +55,7 @@ result_code_t help() {
   printf("Example:\n\n"
          "  $ export CATALINA_HOME=/opt/apache-tomcat\n"
          "  $ jtcl clean build run\n\n");
-  return 0;
+  return SILENCE;
 }
 
 static command_t *commands;
@@ -77,20 +93,41 @@ result_t run_command(const char *name) {
 void error_handler(const result_t *result) {
   switch (result->code) {
   case ERR_NOT_FOUND:
-    printf("ERROR: %s -> Unknown command\n Try $jtcl help\n", result->input);
+    printf("ERROR: %s -> Unknown command\n Try ´$ jtcl help´\n", result->input);
     break;
 
   case ERR_BUILD:
     printf("ERROR: %s -> Could not build the application\n", result->input);
     break;
 
+  case ERR_BUILD_BUT_DEPLOYED:
+    printf("ERROR: %s -> Build failed!\n"
+           "WARNING: Deployed old version\n",
+           result->input);
+    break;
+
+  case ERR_DEPLOY:
+    printf("ERROR: %s -> Could not deploy java application\n", result->input);
+    break;
+
   case ERR_IO:
-    // I will laugh when this happend and don't know why... T_T
     printf("ERROR: %s -> File not found\n", result->input);
     break;
 
   case ERR_ALLOC:
     printf("ERROR: %s -> Execution time error: Allocation\n", result->input);
+    break;
+
+  case ERR_TOMCAT_STARTUP:
+    printf("ERROR: %s -> Tomcat startup script not found\n", result->input);
+    break;
+
+  case ERR_TOMCAT_INTERRUPT:
+    printf("ERROR: %s -> Tomcat interrupted unexpectedly\n", result->input);
+    break;
+
+  case SILENCE:
+    // #Engineering #CleanCode #Art #Amazing
     break;
 
   default:
