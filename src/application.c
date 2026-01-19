@@ -1,7 +1,9 @@
 #include "application.h"
+#include "exception.h"
 #include "platform.h"
 #include "strings.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -125,12 +127,12 @@ char *get_application_path(void) {
 int cpyfile(const char *src, const char *dest) {
   FILE *filer = fopen(src, "rb");
   if (filer == NULL) {
-    return 1;
+    return ERR_IO;
   }
   FILE *filew = fopen(dest, "wb");
   if (filew == NULL) {
     fclose(filer);
-    return 1;
+    return ERR_IO;
   }
 
   char buffer[1024];
@@ -142,7 +144,7 @@ int cpyfile(const char *src, const char *dest) {
   fclose(filer);
   fclose(filew);
 
-  return 0;
+  return OK;
 }
 
 const char *get_filename(const char *path) {
@@ -160,12 +162,12 @@ int deploy_app(const char *path, const char *catalina_home) {
 
   char *webapps_path = join_path(catalina_home, webfolder);
   if (!webapps_path)
-    return 1;
+    return ERR_ALLOC;
 
   char *dest = join_path(webapps_path, filename);
   free(webapps_path);
   if (!dest)
-    return 1;
+    return ERR_ALLOC;
 
   printf("SRC: %s\n", path);
   printf("DEST: %s\n", dest);
@@ -175,52 +177,41 @@ int deploy_app(const char *path, const char *catalina_home) {
   return result;
 }
 
-int remove_app_folder(const char *filename, const char *catalina_home) {
-
-  size_t name_len = strlen(filename);
-  if (strendswith(filename, ".war"))
-    name_len -= 4;
-
-  char *warfolder = malloc(name_len + 1);
-  if (!warfolder)
-    return 1;
-
-  strncpy(warfolder, filename, name_len);
-  warfolder[name_len] = '\0';
-
-  char *webapps_path = join_path(catalina_home, webfolder);
-  if (!webapps_path) {
-    free(warfolder);
-    return 1;
-  }
-
-  char *folder_path = join_path(webapps_path, warfolder);
-  free(webapps_path);
-  free(warfolder);
-
-  if (!folder_path)
-    return 1;
-
-  int result = remove_directory(folder_path);
-  free(folder_path);
-  return result;
-}
-
 int remove_app(const char *path, const char *catalina_home) {
   const char *filename = get_filename(path);
 
   char *webapps_path = join_path(catalina_home, webfolder);
   if (!webapps_path)
-    return 1;
+    return ERR_ALLOC;
+
+  // remove file
 
   char *file_path = join_path(webapps_path, filename);
-  free(webapps_path);
-  if (!file_path)
-    return 1;
+  if (!file_path) {
+    free(webapps_path);
+    return ERR_ALLOC;
+  }
 
   int remove_result = remove(file_path);
-  int folder_result = remove_app_folder(filename, catalina_home);
-
   free(file_path);
-  return remove_result + folder_result;
+
+  // remove folder
+
+  size_t name_len = strlen(filename) - 4;
+  char *appfolder = malloc(name_len + 1);
+  if (!appfolder)
+    return ERR_ALLOC;
+  strncpy(appfolder, filename, name_len);
+  appfolder[name_len] = '\0';
+
+  char *folder_path = join_path(webapps_path, appfolder);
+  free(webapps_path);
+  free(appfolder);
+  if (!folder_path)
+    return ERR_ALLOC;
+
+  int folder_result = remove_directory(folder_path);
+  free(folder_path);
+
+  return fmax(0, fmax(remove_result, folder_result));
 }

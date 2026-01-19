@@ -1,5 +1,6 @@
 #include "command.h"
 #include "application.h"
+#include "exception.h"
 #include "strings.h"
 
 #include <stdio.h>
@@ -9,35 +10,18 @@
 static char *catalina_home;
 static char *application_path;
 
-typedef struct {
-  char *name;
-  int (*callback)();
-} command_t;
+result_code_t clean() { return remove_app(application_path, catalina_home); }
 
-static command_t *commands;
-static int command_count = 0;
-
-int clean() {
-  printf("CLEAN!\n");
-  return 0;
+result_code_t deploy() {
+  // deploy_app(application_path, catalina_home);
+  return OK;
 }
 
-int deploy() {
-  printf("DEPLOY!\n");
-  return 0;
-}
+result_code_t build() { return OK; }
 
-int build() {
-  printf("BUILD!\n");
-  return 0;
-}
+result_code_t run() { return OK; }
 
-int run() {
-  printf("RUN!\n");
-  return 0;
-}
-
-int help() {
+result_code_t help() {
   printf("JTCL - Java Tomcat Launcher [%s]\n"
          "Build & Deploy WAR files to Tomcat\n\n",
          JTCL_VERSION);
@@ -57,6 +41,9 @@ int help() {
          "  $ jtcl clean build run\n\n");
   return 0;
 }
+
+static command_t *commands;
+static int command_count = 0;
 
 void add_command(command_t *cmd) {
   int i = command_count++;
@@ -79,12 +66,37 @@ void load_commands() {
   ADD_CMD(help);
 }
 
-int run_command(const char *name) {
+result_t run_command(const char *name) {
   for (int i = 0; i < command_count; i++) {
     if (streq(commands[i].name, name))
-      return commands[i].callback();
+      return (result_t){commands[i].name, commands[i].callback()};
   }
-  return 1;
+  return (result_t){name, ERR_NOT_FOUND};
+}
+
+void error_handler(const result_t *result) {
+  switch (result->code) {
+  case ERR_NOT_FOUND:
+    printf("ERROR: %s -> Unknown command\n Try $jtcl help\n", result->input);
+    break;
+
+  case ERR_BUILD:
+    printf("ERROR: %s -> Could not build the application\n", result->input);
+    break;
+
+  case ERR_IO:
+    // I will laugh when this happend and don't know why... T_T
+    printf("ERROR: %s -> File not found\n", result->input);
+    break;
+
+  case ERR_ALLOC:
+    printf("ERROR: %s -> Execution time error: Allocation\n", result->input);
+    break;
+
+  default:
+    printf("ERROR: An unexpected error ocurred\n");
+    break;
+  }
 }
 
 int load_env() {
