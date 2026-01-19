@@ -1,0 +1,17 @@
+#ifndef JTCL_EXCEPTION
+#define JTCL_EXCEPTION
+
+typedef enum {
+  OK = 0,
+  ERR_IO,
+  ERR_ALLOC,
+  ERR_BUILD,
+  ERR_BUILD_BUT_DEPLOYED,
+  ERR_DEPLOY,
+  ERR_TOMCAT_STARTUP,
+  ERR_TOMCAT_INTERRUPT,
+  ERR_NOT_FOUND,
+  SILENCE
+} result_code_t;
+
+#endif
