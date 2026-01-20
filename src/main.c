@@ -1,4 +1,5 @@
 #include "command.h"
+#include "logger.h"
 
 #include <stdio.h>
 
@@ -9,7 +10,7 @@ int runargs(char **argv, int len) {
       error_handler(&result);
       return result.code;
     }
-    printf("JTCL: %s [OK]\n", result.input);
+    LOG(OK, "%s", result.input);
   }
   return 0;
 }

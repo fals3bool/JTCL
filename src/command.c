@@ -1,6 +1,7 @@
 #include "command.h"
 #include "application.h"
 #include "exception.h"
+#include "logger.h"
 #include "platform.h"
 #include "strings.h"
 
@@ -93,37 +94,41 @@ result_t run_command(const char *name) {
 void error_handler(const result_t *result) {
   switch (result->code) {
   case ERR_NOT_FOUND:
-    printf("ERROR: %s -> Unknown command\n Try ´$ jtcl help´\n", result->input);
+    LOG(ERROR, "Unknown command %s\n\n", result->input);
+    LOG(INFO, "Usage: jtcl <command> [command ...]\n"
+              "Example: jtcl clean build run\n");
     break;
 
   case ERR_BUILD:
-    printf("ERROR: %s -> Could not build the application\n", result->input);
+    LOG(ERROR, "Maven build failed. Try building with maven manually");
     break;
 
   case ERR_BUILD_BUT_DEPLOYED:
-    printf("ERROR: %s -> Build failed!\n"
-           "WARNING: Deployed old version\n",
-           result->input);
+    LOG(ERROR, "Maven build failed. Try building with maven manually");
+    LOG(WARNING, "Old version deployed. Solve building errors");
     break;
 
   case ERR_DEPLOY:
-    printf("ERROR: %s -> Could not deploy java application\n", result->input);
+    LOG(ERROR, "Failed to deploy application");
     break;
 
   case ERR_IO:
-    printf("ERROR: %s -> File not found\n", result->input);
+    LOG(ERROR, "File or Folder not found");
     break;
 
   case ERR_ALLOC:
-    printf("ERROR: %s -> Execution time error: Allocation\n", result->input);
+    LOG(SEVERE, "Memory allocation failed during operation (%s)",
+        result->input);
     break;
 
   case ERR_TOMCAT_STARTUP:
-    printf("ERROR: %s -> Tomcat startup script not found\n", result->input);
+    LOG(ERROR, "Tomcat startup failed");
     break;
 
   case ERR_TOMCAT_INTERRUPT:
-    printf("ERROR: %s -> Tomcat interrupted unexpectedly\n", result->input);
+    LOG(ERROR,
+        "Tomcat process interrupted unexpectedly. Check logs at: %s/logs/",
+        catalina_home);
     break;
 
   case SILENCE:
@@ -131,7 +136,8 @@ void error_handler(const result_t *result) {
     break;
 
   default:
-    printf("ERROR: An unexpected error ocurred\n");
+    LOG(ERROR, "An unexpected error occurred while executing command '%s'",
+        result->input);
     break;
   }
 }
@@ -141,12 +147,17 @@ int load_env() {
   application_path = get_application_path();
 
   if (!catalina_home) {
-    printf("Error: CATALINA_HOME is not set\n\n");
+    LOG(ERROR, "CATALINA_HOME environment variable is not set");
     return 0;
   }
   if (!application_path) {
-    printf("Error: java application not found. Ensure pom.xml exists "
-           "and project is configured with packaging 'war'.\n\n");
+    LOG(ERROR, "Java application not found in current directory\n"
+               "Example directory structure:\n"
+               "    my-webapp/\n"
+               "    ├── pom.xml (with <packaging>war</packaging>)\n"
+               "    ├── src/\n"
+               "    └── target/\n"
+               "        └── my-webapp-1.0.0.war\n");
     return 0;
   }
 

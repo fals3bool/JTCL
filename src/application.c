@@ -1,5 +1,6 @@
 #include "application.h"
 #include "exception.h"
+#include "logger.h"
 #include "platform.h"
 #include "strings.h"
 
@@ -71,7 +72,7 @@ char *extract_tag_content(FILE *pom, const char *tag) {
 char *extract_tag(char *file, char *tag) {
   FILE *pom = fopen(file, "r");
   if (!pom) {
-    printf("Error: Could not open %s\n", file);
+    LOG(ERROR, "Could not open %s\n", file);
     return NULL;
   }
   char *content = extract_tag_content(pom, tag);
@@ -84,7 +85,7 @@ char *find_war_from_pom(char *artifact_id, char *version, char *packaging) {
   version = extract_tag("pom.xml", "version");
 
   if (!artifact_id || !version) {
-    printf("Error: Could not find artifactId or version in pom.xml\n");
+    LOG(ERROR, "Could not find 'artifactId' or 'version' in pom.xml");
     return NULL;
   }
 
@@ -93,7 +94,7 @@ char *find_war_from_pom(char *artifact_id, char *version, char *packaging) {
     packaging = strdup("war");
 
   if (!streq(packaging, "war")) {
-    printf("Error: Project packaging is '%s', expected 'war'\n", packaging);
+    LOG(ERROR, "Project packaging is '%s', expected 'war'", packaging);
     return NULL;
   }
 
@@ -169,7 +170,7 @@ int deploy_app(const char *path, const char *catalina_home) {
   if (!dest)
     return ERR_ALLOC;
 
-  printf("INFO: deployed -> %s\n", dest);
+  LOG(INFO, "trying to deploy in %s", dest);
 
   int result = cpyfile(path, dest);
   free(dest);
